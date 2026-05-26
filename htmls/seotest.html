@@ -1,0 +1,613 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>SERP Analysis — Pine Script Keywords</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.js"></script>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+body{background:#191919;color:#E6E6E5;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;font-size:12px;padding:20px}
+h1{font-size:16px;font-weight:700;margin-bottom:4px}
+.sub{font-size:11px;color:rgba(255,255,255,.35);margin-bottom:16px}
+.tabs{display:flex;gap:2px;border-bottom:.5px solid rgba(255,255,255,.1);margin-bottom:14px}
+.tab{padding:6px 13px;font-size:11px;background:none;border:none;cursor:pointer;color:rgba(255,255,255,.4);border-bottom:1.5px solid transparent;margin-bottom:-.5px}
+.tab:hover{color:rgba(255,255,255,.7)}
+.tab.active{color:#E6E6E5;border-bottom-color:#E6E6E5;font-weight:500}
+.panel{display:none}.panel.active{display:block}
+.g4{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin-bottom:12px}
+.g2{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:12px}
+.sc{background:#252525;border:.5px solid rgba(255,255,255,.07);border-radius:5px;padding:11px 13px}
+.scl{font-size:9px;color:rgba(255,255,255,.3);letter-spacing:.06em;text-transform:uppercase;margin-bottom:4px}
+.scv{font-size:20px;font-weight:600}
+.scs{font-size:10px;color:rgba(255,255,255,.3);margin-top:2px}
+.sec{font-size:9px;font-weight:600;color:rgba(255,255,255,.3);letter-spacing:.08em;text-transform:uppercase;margin-bottom:7px;margin-top:4px}
+.cw{width:100%;margin-bottom:12px}
+.sr{display:flex;gap:7px;margin-bottom:9px;flex-wrap:wrap;align-items:center}
+.sinp{background:#252525;border:.5px solid rgba(255,255,255,.1);border-radius:4px;padding:5px 9px;color:#E6E6E5;font-size:11px;outline:none;width:200px}
+.sinp:focus{border-color:rgba(255,255,255,.25)}
+.ssel{background:#252525;border:.5px solid rgba(255,255,255,.1);border-radius:4px;padding:4px 7px;color:rgba(255,255,255,.7);font-size:11px;outline:none;cursor:pointer}
+.tw{max-height:420px;overflow-y:auto;border:.5px solid rgba(255,255,255,.07);border-radius:5px}
+table{width:100%;border-collapse:collapse}
+th{text-align:left;padding:5px 8px;font-size:9px;letter-spacing:.06em;text-transform:uppercase;color:rgba(255,255,255,.3);border-bottom:.5px solid rgba(255,255,255,.08);background:#191919;position:sticky;top:0;z-index:2;cursor:pointer}
+th:hover{color:rgba(255,255,255,.6)}
+td{padding:5px 8px;border-bottom:.5px solid rgba(255,255,255,.05);vertical-align:middle}
+tr:hover td{background:rgba(255,255,255,.02)}
+.pbtn{background:#252525;border:.5px solid rgba(255,255,255,.1);border-radius:3px;padding:3px 8px;color:rgba(255,255,255,.45);font-size:10px;cursor:pointer}
+.pgi{font-size:10px;color:rgba(255,255,255,.3)}
+.cc{background:#252525;border:.5px solid rgba(255,255,255,.07);border-radius:5px;padding:10px 12px;margin-bottom:7px}
+.ctit{font-size:11px;font-weight:600;display:flex;justify-content:space-between;margin-bottom:6px}
+.curl{display:flex;align-items:center;gap:7px;padding:3px 0;border-bottom:.5px solid rgba(255,255,255,.04);font-size:10px}
+.curl:last-child{border-bottom:none}
+.pp{width:20px;height:20px;border-radius:3px;display:flex;align-items:center;justify-content:center;font-size:8px;font-weight:700;flex-shrink:0}
+.ins{background:#252525;border-left:2px solid rgba(255,255,255,.12);border-radius:0 4px 4px 0;padding:8px 12px;font-size:11px;color:rgba(255,255,255,.5);margin-bottom:8px;line-height:1.65}
+.ins strong{color:#E6E6E5;font-weight:500}
+.kch{display:inline-block;font-size:8px;padding:2px 6px;border-radius:3px;background:#2F2F2F;color:rgba(255,255,255,.4);margin:2px}
+.lstr{border-left:2px solid;border-radius:0 4px 4px 0;padding:9px 12px;margin-bottom:8px}
+</style>
+</head>
+<body>
+<h1>🔍 SERP Keyword Analysis — Pine Script Niche</h1>
+<div class="sub">~300 keyword groups · Visibility = Σ(1/rank) × √(cluster_keywords) · Google positions 1–10 · Notion dark</div>
+
+<div class="tabs">
+  <button class="tab active" onclick="sw('ov',this)">Overview</button>
+  <button class="tab" onclick="sw('tb',this)">URL Ranking</button>
+  <button class="tab" onclick="sw('cl',this)">Keyword Clusters</button>
+  <button class="tab" onclick="sw('cp',this)">Competitive</button>
+  <button class="tab" onclick="sw('ins',this)">Key Insights</button>
+</div>
+
+<div id="p-ov" class="panel active">
+  <div class="sec">Summary metrics</div>
+  <div class="g4" id="ovs"></div>
+  <div class="g2">
+    <div><div class="sec">Top 14 URLs by visibility score (competitor sites colored)</div>
+      <div class="cw" style="height:330px"><canvas id="vc1"></canvas></div></div>
+    <div><div class="sec">Visibility share by domain</div>
+      <div class="cw" style="height:330px"><canvas id="vc2"></canvas></div></div>
+  </div>
+</div>
+
+<div id="p-tb" class="panel">
+  <div class="sr">
+    <input class="sinp" id="usrch" placeholder="🔎  Search URL or domain…" oninput="rt()">
+    <select class="ssel" id="uclust" onchange="rt()"><option value="">All clusters</option></select>
+    <select class="ssel" id="usort" onchange="rt()">
+      <option value="vis">↓ Visibility score</option>
+      <option value="app">↓ Appearances</option>
+      <option value="avg">↑ Avg rank (lower = better)</option>
+      <option value="t3">↓ Top-3 appearances</option>
+    </select>
+    <span class="pgi" id="pi1"></span>
+  </div>
+  <div class="tw">
+    <table><thead><tr>
+      <th title="Sort by rank">#</th>
+      <th onclick="sc('vis')" title="Visibility = Σ(1/rank)×weight">Visibility ↕</th>
+      <th onclick="sc('app')">Appears ↕</th>
+      <th onclick="sc('avg')">Avg rank ↕</th>
+      <th onclick="sc('t3')">Top-3 ↕</th>
+      <th>URL / Domain</th>
+      <th>Clusters</th>
+    </tr></thead>
+    <tbody id="utb"></tbody></table>
+  </div>
+  <div style="display:flex;gap:7px;margin-top:8px;align-items:center">
+    <button class="pbtn" onclick="up(-1)">← prev</button>
+    <span class="pgi" id="pi2"></span>
+    <button class="pbtn" onclick="up(1)">next →</button>
+  </div>
+</div>
+
+<div id="p-cl" class="panel">
+  <div class="sr">
+    <input class="sinp" id="csrch" placeholder="🔎  Filter cluster…" oninput="rc()" style="width:180px">
+    <select class="ssel" id="csort" onchange="rc()">
+      <option value="kw">↓ # Keywords</option>
+      <option value="vis">↓ Visibility score</option>
+    </select>
+  </div>
+  <div id="clist" style="max-height:500px;overflow-y:auto"></div>
+</div>
+
+<div id="p-cp" class="panel">
+  <div class="sec">Position counts by site (stacked, weighted by keyword count)</div>
+  <div class="cw" style="height:220px"><canvas id="vc3"></canvas></div>
+  <div class="sec" style="margin-top:4px">Per-site SERP footprint</div>
+  <div id="cpd"></div>
+</div>
+
+<div id="p-ins" class="panel">
+  <div class="sec">Strategic insights</div>
+  <div class="ins"><strong>pineify.app dominates competitor SEO</strong> — present in AI Generator, v6 Migration, SuperTrend, FVG, RSI, VWAP, MQL Conversion, and UT Bot clusters. Avg position 3–4. Closest to a full-funnel content strategy among all tracked sites.</div>
+  <div class="ins"><strong>"AI for Pine Script" cluster (~28 keyword variants)</strong> is dominated by a Reddit thread at #1 across every query. Community-generated content is nearly impossible to outrank. Strategy: own position #2–3 with a branded tool page.</div>
+  <div class="ins"><strong>FVG + Order Blocks + SMC (~44 keywords)</strong> — won by GitHub repos, Scribd PDFs, and TradingView search results. No competitor blog has strong presence. <strong>Clear content gap</strong>: step-by-step v6 FVG and Order Block guides would capture high-volume, code-intent queries.</div>
+  <div class="ins"><strong>v6 Migration cluster (21 variants)</strong> — tradingview.com docs own #1 on every query. pineify.app blog ranks #3–7. getpinescript, tradesage, pinescriptwizard are largely absent — easy content win for those sites.</div>
+  <div class="ins"><strong>SuperTrend cluster (~23 keywords)</strong> — dominated by GitHub repos and PineConnector docs. pineify.app has one tutorial page at #8. Opportunity for a comprehensive SuperTrend v6 guide.</div>
+  <div class="ins"><strong>request.security limit cluster (~9 keywords)</strong> — pineify.app's blog post ranks #5 consistently. traderspost.io ranks #6. tradingcode.net owns #2–4. TradingView docs own #1.</div>
+  <div class="ins"><strong>Webull Pine Script (3 keywords)</strong> — a niche cluster not covered by any competitor. Webull.com dominates. <strong>First-mover opportunity</strong>: a "Does Webull support Pine Script? The full answer" article.</div>
+  <div class="ins"><strong>Pine → Python cluster (3 keywords)</strong> — pynesys.io (#2–3) and pynecore.org (#6) rank well here. pineify.app has a blog post (~#4). getpinescript is absent despite this being highly conversion-relevant.</div>
+  <div class="sec" style="margin-top:10px">Keyword cluster opportunity matrix</div>
+  <div style="border:.5px solid rgba(255,255,255,.07);border-radius:5px;overflow:hidden;margin-bottom:12px">
+    <table>
+      <thead><tr><th>Cluster</th><th>Keywords</th><th>Winner today</th><th>Competitor presence</th><th>Opportunity</th></tr></thead>
+      <tbody id="opp-table"></tbody>
+    </table>
+  </div>
+</div>
+
+<script>
+const CL=[
+  {id:'ai',n:'🤖 AI for Pine Script',k:28,c:'#E8A838',u:[
+    [1,'reddit.com','Best AI for writing Pinescript? r/TradingView'],
+    [2,'pineify.app','Pineify: Pine Script AI Editor & Code Generator'],
+    [3,'luxalgo.com','Best AI for Pine Script (LuxAlgo Blog)'],
+    [4,'pinescriptwizard.com','Pine Script Wizard ChatGPT'],
+    [5,'blog.traderspost.io','Using AI to Write Pine Script'],
+    [6,'rangatechnologies.medium.com','What Is the Best AI for Pine Script? (Medium)'],
+    [7,'tradesage.co','TradeSage | AI Pine Script Generator'],
+    [8,'chatgpt.com','Pine Script Coding AI for TradingView (ChatGPT GPT)'],
+    [9,'getpinescript.com','Pine Script Generator and Code Editor'],
+    [10,'blog.traderspost.io','Best AI Trading Tools for TradingView 2026'],
+  ]},
+  {id:'v6',n:'📦 v6 Migration Guide',k:21,c:'#5B9CF6',u:[
+    [1,'tradingview.com','To Pine Script version 6 - Migration guides (Docs)'],
+    [2,'blog.traderspost.io','Pine Script v6 Breaking Changes the Converter Misses'],
+    [3,'scribd.com','Pine Script v6 Migration Guide | PDF'],
+    [4,'reddit.com','Thoughts on Pine Script v6? r/TradingView'],
+    [5,'pineify.app','Pine Script v6: What\'s New + Migration Guide (2026)'],
+    [6,'blog.traderspost.io','How to Convert Pine Script v5 to v6 Without Bugs'],
+    [7,'studocu.com','Migration Guide: Upgrading to Pine Script v6 from v5'],
+    [8,'tradingview.com','Migration guides / Overview (Docs)'],
+    [9,'blog.traderspost.io','What\'s New in Pine Script v6: All Features Covered'],
+    [10,'crosstrade.io','Pine Script™ v6: An Exciting Update for Traders'],
+  ]},
+  {id:'st',n:'📈 SuperTrend Indicator',k:23,c:'#4DB896',u:[
+    [1,'tradingview.com','Scripts Search Results for "supertrend"'],
+    [2,'github.com','SuperTrend indicator implementation in PineScript'],
+    [3,'docs.pineconnector.com','SuperTrend Strategy (PineConnector)'],
+    [4,'docs.algotest.in','SuperTrend Strategy (AlgoTest)'],
+    [5,'scribd.com','Supertrend Strategy in Pine Script V5 | PDF'],
+    [6,'gist.github.com','Supertrend V1.0 - Pinescript (GitHub Gist)'],
+    [7,'medium.com','Building a Supertrend and Bollinger Bands Strategy'],
+    [8,'pineify.app','How to Create Supertrend in TradingView (Pineify)'],
+    [9,'offline-pixel.github.io','Pine Script SuperTrend (ATR-based)'],
+    [10,'dranolia.medium.com','Profitable Pine Script Strategies — With Code Examples'],
+  ]},
+  {id:'fvg',n:'💰 Fair Value Gap (FVG)',k:25,c:'#E06C4B',u:[
+    [1,'github.com','sonnyparlin/fvg_pinescript: Fair value gap indicator'],
+    [2,'tradingview.com','Scripts Search Results for "fair value gap"'],
+    [3,'scribd.com','Fair Value Gap Indicator in Pine Script | PDF'],
+    [4,'reddit.com','Ploting a Fair Value Gap indicator r/pinescript'],
+    [5,'tradingview.com','Fair Value Gap [LuxAlgo] — Indicator'],
+    [6,'medium.com','Automating Fair Value Gaps (FVG) in Python'],
+    [7,'etsy.com','FVG Trading Indicator: Fair Value Gap'],
+    [8,'trendspider.com','Fair Value Gap Trading Strategy (TrendSpider)'],
+    [9,'luxalgo.com','Fair Value Gap | Trading Indicator (LuxAlgo)'],
+    [10,'youtube.com','Building a Fair Value Gap indicator for TradingView'],
+  ]},
+  {id:'ob',n:'🧱 Order Blocks / ICT',k:15,c:'#9B8FEA',u:[
+    [1,'reddit.com','Created an order block indicator (not lagging)'],
+    [2,'tradingview.com','Scripts Search Results for "order block"'],
+    [3,'scribd.com','Order Block Plus Pine Script Code | PDF'],
+    [4,'tradingview.com','Orderblocks — Indicators and Strategies'],
+    [5,'github.com','ICT Retracement to Order Block with Screener'],
+    [6,'luxalgo.com','Order Block Detector | LuxAlgo'],
+    [7,'etsy.com','Order Block Indicator - Etsy'],
+    [8,'luxalgo.com','ICT Concepts: Order Blocks Explained (LuxAlgo)'],
+    [9,'medium.com','OrderBlocks Indicator [SignalCave]'],
+    [10,'youtube.com','BEST Order Block Indicator on TradingView **NEW**'],
+  ]},
+  {id:'rsi',n:'📊 RSI & Divergence',k:14,c:'#6DBD6D',u:[
+    [1,'courses.theartoftrading.com','How to Detect RSI Divergence in Pine Script'],
+    [2,'pineify.app','Free RSI Divergence Scanner (Pineify)'],
+    [3,'github.com','Detecting RSI Divergence on TradingView (GitHub)'],
+    [4,'tradingview.com','Scripts Search Results for "rsi divergence"'],
+    [5,'tradingview.com','RSI Divergence (Pine v4) — Indicator by kingthies'],
+    [6,'tradesage.co','Pine Script RSI: Code Indicators in Minutes [2026]'],
+    [7,'pineconnector.com','Pine Script RSI Strategy (PineConnector)'],
+    [8,'scribd.com','RSI Divergence Detection in Pine Script | PDF'],
+    [9,'quant.stackexchange.com','Programmatically detect RSI divergence'],
+    [10,'supa.is','Pine Script RSI Divergence Indicator That Works'],
+  ]},
+  {id:'lim',n:'⚠️ Drawing Limits',k:22,c:'#F08080',u:[
+    [1,'tradingview.com','Writing / Limitations — TradingView Docs'],
+    [2,'tradingcode.net','Set maximum trend lines in Pine Script'],
+    [3,'tradingcode.net','Set maximum labels in Pine Script'],
+    [4,'quantnomad.com','The Main Limitations of Pine Script on TradingView'],
+    [5,'tradingview.com','Visuals / Lines and boxes — Docs'],
+    [6,'reddit.com','Around 5000 lines indicator blocked by 550 scopes limit'],
+    [7,'tradingview.com','New parameters to manage drawings count (TV Blog)'],
+    [8,'stackoverflow.com','pine script - How to Limit the Amount of Lines?'],
+    [9,'pinecoders.com','FAQ & Code - PineCoders'],
+    [10,'tradingcode.net','Why does TradingView limit Pine Script drawings?'],
+  ]},
+  {id:'api',n:'🌐 External API / HTTP',k:12,c:'#87CEEB',u:[
+    [1,'stackoverflow.com','Http request in pine script'],
+    [2,'reddit.com','Feature Request: Allow HTTP GET request in Pinescript'],
+    [3,'linkedin.com','Integrating Pine Script with External APIs'],
+    [4,'tradingview.com','Concepts / Other timeframes and data — Docs'],
+    [5,'community.make.com','HTTP Request to Trading view (Not via API)'],
+    [6,'dranolia.medium.com','Integrating Pine Script, Python & LangChain'],
+    [7,'pineify.app','Does TradingView Have an API? (Pineify Blog)'],
+    [8,'tradingview.com','Request — Library by TradingView'],
+    [9,'quantnomad.com','Using 3rd Party Data in TradingView'],
+    [10,'blog.traderspost.io','Pine Script v6: request.security() Inside Loops'],
+  ]},
+  {id:'req',n:'🔒 request.security Limit',k:9,c:'#DDA0DD',u:[
+    [1,'tradingview.com','Writing / Limitations — Docs'],
+    [2,'reddit.com','request.security function limit fixable? - Reddit'],
+    [3,'stackoverflow.com','How to make more than 40 security() calls?'],
+    [4,'tradingcode.net','How to handle "too many securities" error'],
+    [5,'pineify.app','request.security() in Pine Script (Pineify Blog)'],
+    [6,'blog.traderspost.io','Pine Script v6: request.security() Inside Loops'],
+    [7,'tradingview.com','Concepts / Other timeframes and data — Docs'],
+    [8,'luxalgo.com','5 Causes of Slow Pine Scripts (LuxAlgo)'],
+    [9,'reddit.com','why request.security has limit of 40?'],
+    [10,'youtube.com','Request Security Function In Pinescript | Lesson 37'],
+  ]},
+  {id:'mql',n:'⚙️ Pine → MQL Conversion',k:8,c:'#FFB347',u:[
+    [1,'docsbot.ai','Pine to MQL5 Converter - AI Prompt'],
+    [2,'chatgpt.com','TradeScript Translator Pro (PineScript to MQL4/5)'],
+    [3,'theresanaiforthat.com','Convert pine to mql5 - There\'s an AI for That'],
+    [4,'strategyconverter.com','Strategy Converter - Pine to MQL4/MQL5'],
+    [5,'mql5.com','Convert Pinescript to MQL5 - MQL5 Freelance'],
+    [6,'youtube.com','How to Convert Pine Script to MQL4/MQL5 in Minutes'],
+    [7,'pineify.app','Converting Pine Script to MQL5 (Pineify Blog)'],
+    [8,'mt4programming.com','Pine Script to MT4 Conversion'],
+  ]},
+  {id:'py',n:'🐍 Pine → Python',k:3,c:'#40E0D0',u:[
+    [1,'reddit.com','I built a Pinescript to Python converter'],
+    [2,'pynesys.io','PyneSys - Pine Script to Python Converter/Compiler'],
+    [3,'chatgpt.com','Pine to Python Converter - ChatGPT GPT'],
+    [4,'youtube.com','Tradingview Pinescript to Python Conversion [FULL TUTORIAL]'],
+    [5,'stackoverflow.com','Tradingview Pinescript to Python Conversion - SO'],
+    [6,'pynecore.org','Converting from Pine Script — PyneCore Docs'],
+    [7,'pineify.app','How to Convert Pine Script to Python (Pineify Blog)'],
+    [8,'pypi.org','pynescript - PyPI'],
+  ]},
+  {id:'gain',n:'🎯 GainzAlgo',k:8,c:'#FF69B4',u:[
+    [1,'gainzalgo.com','GainzAlgo | The Best Trading Algo'],
+    [2,'docsbot.ai','GainzAlgo V2 Pine Script Analysis - DocsBot AI'],
+    [3,'tradingview.com','GainzAlgo — Trading Ideas and Scripts'],
+    [4,'reddit.com','Observations from testing GainzAlgo V2 Alpha - Reddit'],
+    [5,'theresanaiforthat.com','Free version of gainzalgo v2 indicator'],
+    [6,'gainzalgo.com','GainzAlgo V2 [Lifetime Access]'],
+    [7,'scribd.com','All-in-One Trading Indicator Script | PDF'],
+    [8,'tradingview.com','GainzAlgo Suite - TradingView Script'],
+  ]},
+  {id:'utb',n:'🤖 UT Bot Alerts',k:7,c:'#B0C4DE',u:[
+    [1,'github.com','AedonStorm/UT-Bot-Alerts - GitHub'],
+    [2,'tradingview.com','UT Bot Alerts — Indicator by QuantNomad'],
+    [3,'scribd.com','UT Bot Alerts Pine Script Code | PDF'],
+    [4,'pineify.app','UT Bot Indicator - Pineify Blog'],
+    [5,'reddit.com','UT Bot Alerts + LinReg Candles + Heikin Ashi - Reddit'],
+    [6,'tradingview.com','UT Bot Alerts [2026 Elite Edition]'],
+    [7,'mql5.com','UT Bot Alerts for MT4 | Free Download'],
+  ]},
+  {id:'alpha',n:'📉 AlphaTrend',k:8,c:'#CD853F',u:[
+    [1,'tradingview.com','AlphaTrend — Indicator by KivancOzbilgic'],
+    [2,'pineconnector.com','AlphaTrend Strategy (PineConnector)'],
+    [3,'getpinescript.com','AlphaTrend Technical Indicator Explanation'],
+    [4,'github.com','AlphaTrend For ProfitView - GitHub'],
+    [5,'scribd.com','AlphaTrend Indicator Script for Trading | PDF'],
+    [6,'tradingview.com','Kivancozbilgic — Indicateurs et Stratégies'],
+    [7,'prorealcode.com','alphatrend indicator tradingview pine script - ProRealTime'],
+    [8,'youtube.com','Be An ALPHA Trader! AlphaTrend Indicator - YouTube'],
+  ]},
+  {id:'opt',n:'⚡ Performance Optimization',k:7,c:'#98FB98',u:[
+    [1,'tradingview.com','Writing / Profiling and optimization — Docs'],
+    [2,'pineify.app','TradingView Strategy Optimizer | Auto Backtesting'],
+    [3,'luxalgo.com','5 Causes of Slow Pine Scripts on TradingView'],
+    [4,'medium.com','Tips and Tricks for Optimizing Pine Script Code'],
+    [5,'reddit.com','How do Pine Scripters go about parameter optimization?'],
+    [6,'stackoverflow.com','How do I optimize my Pinescript script?'],
+    [7,'tradingview.com','Turbo boost your scripts with Pine Profiler (TV Blog)'],
+  ]},
+  {id:'vwap',n:'📏 VWAP',k:7,c:'#F5DEB3',u:[
+    [1,'tradingcode.net','Get the VWAP in TradingView Pine Script'],
+    [2,'tradingview.com','VWAP — Indicators and Strategies'],
+    [3,'stackoverflow.com','VWAP in pine script - indicator'],
+    [4,'medium.com','How to Create a VWAP Indicator in Pinescript'],
+    [5,'rangatechnologies.medium.com','VWAP Indicator in Pine Script - Ranga Technologies'],
+    [6,'pineify.app','Anchored VWAP Pine Script (Pineify Blog)'],
+    [7,'docs.algotest.in','VWAP Strategy - AlgoTest'],
+  ]},
+  {id:'smc',n:'💎 Smart Money / SMC',k:4,c:'#7FFFD4',u:[
+    [1,'tradingview.com','Smart Money Concepts (SMC) [LuxAlgo]'],
+    [2,'luxalgo.com','Smart Money Concepts (SMC) | LuxAlgo Library'],
+    [3,'pineify.app','Free Liquidity Sweep Detector (Pineify)'],
+    [4,'scribd.com','Liquidity Sweep Indicator Script | PDF'],
+    [5,'luxalgo.com','Liquidity Sweeps | LuxAlgo Library'],
+    [6,'tradingview.com','Liquidity Sweep Detector — Indicator by DefinedEdge'],
+    [7,'reddit.com','I want to create an indicator based on Smart Money'],
+  ]},
+  {id:'alt',n:'🔄 Pine Alternatives',k:5,c:'#FFA07A',u:[
+    [1,'reddit.com','GoCharting Allegedly Copying Pine Script - Reddit'],
+    [2,'stackoverflow.com','Are there any Pine script alternatives now?'],
+    [3,'thetraderchick.com','Pine Script Alternative & TradingView competitors'],
+    [4,'forextester.com','9 Best TradingView Alternatives for Backtesting'],
+    [5,'sourceforge.net','Best Pine Script Alternatives & Competitors'],
+    [6,'blog.traderspost.io','Pine Script Alternatives for High-Volume Strategies'],
+    [7,'trendspider.com','Best TradingView Alternative in 2026'],
+  ]},
+  {id:'webull',n:'📱 Webull Pine Script',k:3,c:'#4169E1',u:[
+    [1,'webull.com','Script Editor - Webull FAQ'],
+    [2,'webull.com','Webull x TradingView: Enhanced Trading'],
+    [3,'reddit.com','Webull finally added Script Editor to the desktop app!!'],
+    [4,'youtube.com','Webull Script Editor Tutorial - YouTube'],
+    [5,'webull.com','How do I add the Script Editor to my app?'],
+    [6,'freelancer.com','Convert a Tradingview script to a Webull script'],
+  ]},
+  {id:'rep',n:'🔁 Repainting',k:4,c:'#FF6347',u:[
+    [1,'tradingview.com','Concepts / Repainting — TradingView Docs'],
+    [2,'crosstrade.io','Pine Script Repainting: Why It Happens and How to Prevent It'],
+    [3,'blog.traderspost.io','What is repainting in TradingView - traderspost'],
+    [4,'stackoverflow.com','Pine Script Still Repainting with Best Practices?'],
+  ]},
+  {id:'ind2strat',n:'🔀 Indicator → Strategy',k:3,c:'#8FBC8F',u:[
+    [1,'tradingview.com','Strategies — TradingView FAQ'],
+    [2,'reddit.com','Turning an indicator into a strategy (open source)?'],
+    [3,'blog.pickmytrade.trade','Convert TradingView Indicator to Strategy with AI'],
+    [4,'docsbot.ai','TradingView Indicator to Strategy - AI Prompt'],
+    [5,'tradingcode.net','How to turn a TradingView alert into a trading strategy?'],
+    [6,'youtube.com','Convert TradingView Indicators into Strategies with AI'],
+  ]},
+];
+
+const COMPS={
+  'pineify.app':{c:'#4DB896',label:'pineify.app'},
+  'getpinescript.com':{c:'#E06C4B',label:'getpinescript.com'},
+  'tradesage.co':{c:'#5B9CF6',label:'tradesage.co'},
+  'pinescriptwizard.com':{c:'#9B8FEA',label:'pinescriptwizard.com'},
+  'pynesys.io':{c:'#E8A838',label:'pynesys.io'},
+  'pynecore.org':{c:'#6DBD6D',label:'pynecore.org'},
+};
+
+// Build URL map using domain as key (simplified — same domain can appear multiple times in different clusters)
+const UM={};
+CL.forEach(cl=>{
+  cl.u.forEach(([pos,dom,title])=>{
+    const key=dom+'::'+title.slice(0,40);
+    if(!UM[key])UM[key]={dom,title,app:0,psum:0,t3:0,t5:0,vis:0,cls:[],key};
+    const w=Math.sqrt(cl.k);
+    UM[key].app++;
+    UM[key].psum+=pos;
+    UM[key].vis+=w/pos;
+    if(pos<=3)UM[key].t3++;
+    if(pos<=5)UM[key].t5++;
+    if(!UM[key].cls.includes(cl.n))UM[key].cls.push(cl.n);
+  });
+});
+
+// Also aggregate by domain
+const DOMMAP={};
+CL.forEach(cl=>cl.u.forEach(([pos,dom])=>{
+  const w=Math.sqrt(cl.k);
+  DOMMAP[dom]=(DOMMAP[dom]||0)+w/pos;
+}));
+const TOPDOMS=Object.entries(DOMMAP).sort((a,b)=>b[1]-a[1]).slice(0,12);
+
+const AU=Object.values(UM).map(u=>({...u,avg:+(u.psum/u.app).toFixed(1),vis:+u.vis.toFixed(2)})).sort((a,b)=>b.vis-a.vis);
+
+// Stats
+const totalKW=CL.reduce((s,c)=>s+c.k,0);
+const compUrls=AU.filter(u=>Object.keys(COMPS).some(s=>u.dom.includes(s)||s.includes(u.dom)));
+document.getElementById('ovs').innerHTML=`
+<div class="sc"><div class="scl">Total keywords</div><div class="scv">${totalKW}</div><div class="scs">${CL.length} clusters</div></div>
+<div class="sc"><div class="scl">Unique URL entries</div><div class="scv">${AU.length}</div><div class="scs">deduplicated</div></div>
+<div class="sc"><div class="scl">Top URL vis. score</div><div class="scv" style="font-size:14px">${AU[0].vis.toFixed(1)}</div><div class="scs">${AU[0].dom}</div></div>
+<div class="sc"><div class="scl">Competitor entries</div><div class="scv" style="color:#4DB896">${compUrls.length}</div><div class="scs">6 tracked sites</div></div>
+`;
+
+const GC='rgba(255,255,255,.06)',TCS={color:'rgba(255,255,255,.35)',font:{size:9}};
+
+// Charts
+setTimeout(()=>{
+  const top14=AU.slice(0,14);
+  new Chart(document.getElementById('vc1'),{type:'bar',data:{
+    labels:top14.map(u=>u.dom.length>22?u.dom.slice(0,22)+'…':u.dom),
+    datasets:[{data:top14.map(u=>u.vis),
+      backgroundColor:top14.map(u=>{
+        const s=Object.keys(COMPS).find(k=>u.dom.includes(k)||k.includes(u.dom));
+        return s?COMPS[s].c+'CC':'rgba(255,255,255,.16)';
+      }),borderRadius:2,borderSkipped:false}]
+  },options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false}},
+    indexAxis:'y',
+    scales:{y:{ticks:{...TCS,maxTicksLimit:14},grid:{color:GC},border:{color:'rgba(255,255,255,.07)'}},
+    x:{ticks:{...TCS},grid:{color:GC},border:{color:'rgba(255,255,255,.07)'}}}}
+  });
+  new Chart(document.getElementById('vc2'),{type:'doughnut',data:{
+    labels:TOPDOMS.map(d=>d[0].length>18?d[0].slice(0,18)+'…':d[0]),
+    datasets:[{data:TOPDOMS.map(d=>+d[1].toFixed(1)),
+      backgroundColor:['#E06C4B','#4DB896','#5B9CF6','#9B8FEA','#E8A838','#6DBD6D','#F08080','#87CEEB','#DDA0DD','#FFB347','#40E0D0','#B0C4DE'].map(c=>c+'CC'),
+      borderColor:'transparent'}]
+  },options:{responsive:true,maintainAspectRatio:false,
+    plugins:{legend:{display:true,position:'right',labels:{color:'rgba(255,255,255,.4)',font:{size:9},boxWidth:9,padding:5}}}}
+  });
+},100);
+
+// TABLE
+let upg=0,uper=25,ufl=AU,usc='vis';
+function sc(k){usc=k;document.getElementById('usort').value=k;rt();}
+function rt(){
+  const q=(document.getElementById('usrch').value||'').toLowerCase();
+  const fc=document.getElementById('uclust').value;
+  const fs=document.getElementById('usort').value||usc;
+  let a=AU.filter(u=>{
+    return (!q||u.dom.toLowerCase().includes(q)||u.title.toLowerCase().includes(q))
+      &&(!fc||u.cls.some(c=>c===fc));
+  });
+  if(fs==='vis')a.sort((x,y)=>y.vis-x.vis);
+  else if(fs==='app')a.sort((x,y)=>y.app-x.app);
+  else if(fs==='avg')a.sort((x,y)=>x.avg-y.avg);
+  else if(fs==='t3')a.sort((x,y)=>y.t3-x.t3);
+  ufl=a;upg=0;rp();
+}
+function rp(){
+  const s=upg*uper,sl=ufl.slice(s,s+uper);
+  const mv=ufl[0]?.vis||1;
+  const rows=sl.map((u,i)=>{
+    const gr=ufl.indexOf(u)+1;
+    const cs=Object.keys(COMPS).find(k=>u.dom.includes(k)||k.includes(u.dom));
+    const cc=cs?COMPS[cs].c:'';
+    const bw=Math.max(2,Math.round(u.vis/mv*65));
+    return`<tr>
+      <td style="color:rgba(255,255,255,.3);text-align:center;font-size:10px">${gr}</td>
+      <td><div style="display:flex;align-items:center;gap:5px"><div style="width:${bw}px;height:4px;background:${cc||'rgba(255,255,255,.2)'};border-radius:2px"></div><span style="font-size:10px;color:rgba(255,255,255,.6)">${u.vis}</span></div></td>
+      <td style="text-align:center">${u.app}</td>
+      <td style="text-align:center;color:${+u.avg<=3?'#4DB896':+u.avg<=5?'#E8A838':'rgba(255,255,255,.45)'}">${u.avg}</td>
+      <td style="text-align:center;color:${u.t3>2?'#FFD700':u.t3>0?'rgba(255,255,255,.6)':'rgba(255,255,255,.2)'}">${u.t3}</td>
+      <td>
+        ${cs?`<span style="font-size:8px;padding:1px 4px;border-radius:2px;background:${cc}22;color:${cc};margin-right:3px">★ ours</span>`:''}
+        <span style="color:rgba(255,255,255,.65)">${u.dom}</span>
+        <div style="font-size:9px;color:rgba(255,255,255,.3)">${u.title.length>60?u.title.slice(0,60)+'…':u.title}</div>
+      </td>
+      <td><span style="font-size:8px;background:#2F2F2F;padding:1px 5px;border-radius:3px;color:rgba(255,255,255,.35)">${u.cls[0]?u.cls[0].replace(/^[^\s]+\s/,'').slice(0,16)+'…':'—'}</span></td>
+    </tr>`;
+  }).join('');
+  document.getElementById('utb').innerHTML=rows||'<tr><td colspan="7" style="text-align:center;color:rgba(255,255,255,.2);padding:18px">No results</td></tr>';
+  const info=`${s+1}–${Math.min(s+uper,ufl.length)} / ${ufl.length}`;
+  document.getElementById('pi1').textContent=info;
+  document.getElementById('pi2').textContent=info;
+}
+function up(d){if(d<0&&upg>0)upg--;else if(d>0&&(upg+1)*uper<ufl.length)upg++;rp();}
+function initTable(){
+  const cs=document.getElementById('uclust');
+  CL.forEach(c=>{const o=document.createElement('option');o.value=c.n;o.textContent=c.n.replace(/^[^\s]+\s/,'').slice(0,25);cs.appendChild(o);});
+  rt();
+}
+
+// CLUSTERS
+function rc(){
+  const q=(document.getElementById('csrch').value||'').toLowerCase();
+  const st=document.getElementById('csort').value;
+  let arr=CL.filter(c=>!q||c.n.toLowerCase().includes(q)||c.u.some(([,d,t])=>t.toLowerCase().includes(q)||d.toLowerCase().includes(q)));
+  if(st==='kw')arr.sort((a,b)=>b.k-a.k);
+  else arr.sort((a,b)=>{
+    const va=a.u.reduce((s,[p])=>s+Math.sqrt(a.k)/p,0);
+    const vb=b.u.reduce((s,[p])=>s+Math.sqrt(b.k)/p,0);
+    return vb-va;
+  });
+  const h=arr.map(cl=>{
+    const vis=cl.u.reduce((s,[p])=>s+Math.sqrt(cl.k)/p,0).toFixed(1);
+    return`<div class="cc" style="border-left:2px solid ${cl.c}22">
+      <div class="ctit"><span style="color:${cl.c}">${cl.n}</span><span style="font-size:9px;color:rgba(255,255,255,.3)">${cl.k} keywords · vis ${vis}</span></div>
+      ${cl.u.slice(0,7).map(([pos,dom,title])=>{
+        const pc=pos===1?'background:rgba(255,215,0,.15);color:#FFD700':pos===2?'background:rgba(192,192,192,.12);color:#C0C0C0':pos===3?'background:rgba(205,127,50,.12);color:#CD7F32':'background:rgba(255,255,255,.06);color:rgba(255,255,255,.35)';
+        const cs=Object.keys(COMPS).find(k=>dom.includes(k)||k.includes(dom));
+        const cc=cs?COMPS[cs].c:'';
+        return`<div class="curl">
+          <span class="pp" style="${pc}">${pos}</span>
+          <div style="flex:1;min-width:0">
+            <div style="color:${cc||'rgba(255,255,255,.65)'};overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${title}</div>
+            <div style="font-size:9px;color:rgba(255,255,255,.3)">${dom}${cs?` <span style="font-size:8px;padding:1px 4px;border-radius:2px;background:${cc}22;color:${cc}">★ ours</span>`:''}</div>
+          </div>
+        </div>`;
+      }).join('')}
+    </div>`;
+  }).join('');
+  document.getElementById('clist').innerHTML=h;
+}
+
+// COMPETITIVE
+function initComp(){
+  const sites=Object.keys(COMPS);
+  const sd={};
+  sites.forEach(s=>sd[s]={vis:0,p1:0,p3:0,p5:0,clns:[],entries:[]});
+  CL.forEach(cl=>cl.u.forEach(([pos,dom,title])=>{
+    sites.forEach(s=>{
+      if(dom.includes(s)||s.includes(dom)){
+        const w=Math.sqrt(cl.k);
+        sd[s].vis+=w/pos;
+        if(pos===1)sd[s].p1+=cl.k;
+        if(pos<=3)sd[s].p3+=cl.k;
+        if(pos<=5)sd[s].p5+=cl.k;
+        if(!sd[s].clns.includes(cl.n))sd[s].clns.push(cl.n);
+        sd[s].entries.push({dom,title,pos,cluster:cl.n,clkw:cl.k});
+      }
+    });
+  }));
+  new Chart(document.getElementById('vc3'),{type:'bar',data:{
+    labels:sites.map(s=>s.split('.')[0]),
+    datasets:[
+      {label:'#1 (×kw)',data:sites.map(s=>sd[s].p1),backgroundColor:'rgba(255,215,0,.8)',stack:'s'},
+      {label:'Top-3 (×kw)',data:sites.map(s=>sd[s].p3-sd[s].p1),backgroundColor:'rgba(192,192,192,.6)',stack:'s'},
+      {label:'Top-5 (×kw)',data:sites.map(s=>sd[s].p5-sd[s].p3),backgroundColor:'rgba(255,255,255,.25)',stack:'s'},
+    ]
+  },options:{responsive:true,maintainAspectRatio:false,
+    plugins:{legend:{display:true,labels:{color:'rgba(255,255,255,.4)',font:{size:9},boxWidth:9,padding:7}}},
+    scales:{y:{stacked:true,ticks:{...TCS},grid:{color:GC},border:{color:'rgba(255,255,255,.07)'}},
+    x:{stacked:true,ticks:{color:'rgba(255,255,255,.45)',font:{size:10}},grid:{display:false},border:{color:'rgba(255,255,255,.07)'}}}}
+  });
+  const h=sites.map(s=>{
+    const d=sd[s];const co=COMPS[s].c;
+    const sorted=[...d.entries].sort((a,b)=>Math.sqrt(b.clkw)/b.pos-Math.sqrt(a.clkw)/a.pos);
+    const uniq=[];const seen=new Set();
+    sorted.forEach(e=>{if(!seen.has(e.title.slice(0,30))){seen.add(e.title.slice(0,30));uniq.push(e);}});
+    return`<div class="cc" style="border-left:3px solid ${co}">
+      <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:8px">
+        <span style="font-size:12px;font-weight:700;color:${co}">${s}</span>
+        <span style="font-size:10px;color:rgba(255,255,255,.35)">Vis ${d.vis.toFixed(1)} · ${d.clns.length} clusters · ${d.p1>0?d.p1+' #1-keyword-rank':'no #1s'}</span>
+      </div>
+      <div style="display:flex;flex-wrap:wrap;gap:3px;margin-bottom:8px">
+        ${d.clns.map(c=>`<span class="kch">${c.replace(/^[^\s]+\s/,'').slice(0,20)}</span>`).join('')}
+      </div>
+      ${uniq.length===0?'<div style="font-size:10px;color:rgba(255,255,255,.2);padding:5px 0">No tracked URLs found in this dataset</div>':''}
+      ${uniq.slice(0,5).map(e=>`<div class="curl">
+        <span class="pp" style="${e.pos===1?'background:rgba(255,215,0,.15);color:#FFD700':e.pos<=3?'background:rgba(205,127,50,.12);color:#CD7F32':'background:rgba(255,255,255,.06);color:rgba(255,255,255,.35)'}">
+          ${e.pos}</span>
+        <div style="flex:1;min-width:0">
+          <div style="color:${co};overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${e.title}</div>
+          <div style="font-size:9px;color:rgba(255,255,255,.3)">${e.cluster.replace(/^[^\s]+\s/,'')}</div>
+        </div>
+      </div>`).join('')}
+    </div>`;
+  }).join('');
+  document.getElementById('cpd').innerHTML=h;
+}
+
+// OPPORTUNITY TABLE
+const OPPS=[
+  ['AI for Pine Script','28','reddit.com #1 (unbeatable)','pineify ✓, wizard ✓, tradesage ✓, getpinescript ✓','High — target pos #2 with branded AI tool page','#E8A838'],
+  ['v6 Migration','21','tradingview.com docs #1','pineify ✓, others ✗','High — getpinescript/tradesage missing entirely','#5B9CF6'],
+  ['Fair Value Gap','25','github.com + scribd.com','pineify only #8–9','Very High — no competitor blog ranks well','#E06C4B'],
+  ['Order Blocks / ICT','15','reddit.com + tradingview.com','none rank in top 5','Very High — big content gap','#9B8FEA'],
+  ['SuperTrend','23','github.com + pineconnector','pineify ✓ (#8), getpinescript ✓','High — comprehensive v6 tutorial missing','#4DB896'],
+  ['RSI & Divergence','14','artoftrading.com #1','pineify ✓, tradesage ✓','Medium — pineify scanner ranks #2','#6DBD6D'],
+  ['request.security Limit','9','tradingview.com #1','pineify ✓ (#5)','Medium — opportunity at #3–4','#DDA0DD'],
+  ['External API / HTTP','12','stackoverflow.com #1','pineify ✓ (#7)','High — "does Pine Script support HTTP?" guide','#87CEEB'],
+  ['Pine → Python','3','reddit.com #1','pynesys #2, pynecore #6, pineify #7','Medium — pynesys.io owns this niche','#40E0D0'],
+  ['Pine → MQL','8','docsbot.ai #1','pineify ✓ (#7)','High — dedicated tool page opportunity','#FFB347'],
+  ['Webull Pine Script','3','webull.com dominates','none rank','Very High — zero competition, first-mover wins','#4169E1'],
+  ['Performance Optimization','7','tradingview.com #1','pineify ✓ (#2)','Low — pineify strategy optimizer already ranks #2','#98FB98'],
+  ['Pine Alternatives','5','reddit + stackoverflow','none rank','Medium — "Pine Script vs X" comparison articles','#FFA07A'],
+  ['Drawing Limits','22','tradingview.com + tradingcode.net','none rank','High — deep-dive "working around limits" guide','#F08080'],
+];
+const ot=OPPS.map(([cl,kw,win,comp,opp,c])=>`
+  <tr>
+    <td><span style="font-size:10px;font-weight:600;color:${c}">${cl}</span></td>
+    <td style="text-align:center;font-size:10px">${kw}</td>
+    <td style="font-size:10px;color:rgba(255,255,255,.5)">${win}</td>
+    <td style="font-size:10px">${comp}</td>
+    <td style="font-size:10px;color:${opp.startsWith('Very')?'#4DB896':opp.startsWith('High')?'#E8A838':'rgba(255,255,255,.5)'}">${opp}</td>
+  </tr>
+`).join('');
+document.getElementById('opp-table').innerHTML=ot;
+
+const ini={};
+function sw(id,btn){
+  document.querySelectorAll('.tab').forEach(t=>t.classList.remove('active'));
+  document.querySelectorAll('.panel').forEach(p=>p.classList.remove('active'));
+  btn.classList.add('active');
+  document.getElementById('p-'+id).classList.add('active');
+  if(!ini[id]){ini[id]=true;
+    if(id==='tb')initTable();
+    if(id==='cl')rc();
+    if(id==='cp')initComp();
+  }
+}
+</script>
+</body>
+</html>
